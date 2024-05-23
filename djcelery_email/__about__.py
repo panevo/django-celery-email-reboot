@@ -9,8 +9,8 @@ __uri__ = 'https://github.com/panevo/django-celery-email'
 
 __version__ = '4.0.0'
 
-__author__ = 'Paul McLanahan'
-__email__ = 'paul@mclanahan.net'
+__author__ = 'PKarlo Krakan'
+__email__ = 'karlo.krakan@panevo.com'
 
 __license__ = 'BSD'
 __copyright__ = 'Copyright 2015 {0}'.format(__author__)
