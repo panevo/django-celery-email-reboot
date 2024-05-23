@@ -4,8 +4,8 @@ __all__ = [
 ]
 
 __title__ = 'django-celery-email'
-__summary__ = 'An async Django email backend using celery'
-__uri__ = 'https://github.com/pmclanahan/django-celery-email'
+__summary__ = 'An async Django email backend using celery (fork)'
+__uri__ = 'https://github.com/panevo/django-celery-email'
 
 __version__ = '4.0.0'
 
