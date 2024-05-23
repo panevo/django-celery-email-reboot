@@ -3,7 +3,7 @@ __all__ = [
     '__email__', '__license__', '__copyright__',
 ]
 
-__title__ = 'django-celery-email'
+__title__ = 'panevo-django-celery-email'
 __summary__ = 'An async Django email backend using celery (fork)'
 __uri__ = 'https://github.com/panevo/django-celery-email'
 
