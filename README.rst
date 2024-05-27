@@ -6,7 +6,7 @@ django-celery-email - A Celery-backed Django Email Backend
     :target: https://pypi.python.org/pypi/django-celery-email
 
 A `Django`_ email backend that uses a `Celery`_ queue for out-of-band sending
-of the messages. (A fork of [django-celery-email](https://github.com/pmclanahan/django-celery-email))
+of the messages. (A fork of https://github.com/pmclanahan/django-celery-email)
 
 .. _`Celery`: http://celeryproject.org/
 .. _`Django`: http://www.djangoproject.org/
