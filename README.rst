@@ -10,7 +10,7 @@ of the messages. (A fork of `django_celery_email`_)
 
 .. _`Celery`: http://celeryproject.org/
 .. _`Django`: http://www.djangoproject.org/
-.. _'django_celery_email`: https://github.com/pmclanahan/django-celery-email
+.. _`django_celery_email`: https://github.com/pmclanahan/django-celery-email
 
 .. warning::
 
