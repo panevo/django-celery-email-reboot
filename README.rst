@@ -1,5 +1,5 @@
 ==========================================================
-panevo-django-celery-email - A Celery-backed Django Email Backend
+django-celery-email - A Celery-backed Django Email Backend
 ==========================================================
 
 .. image:: https://img.shields.io/pypi/v/django-celery-email.svg
