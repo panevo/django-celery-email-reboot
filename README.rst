@@ -6,7 +6,11 @@ django-celery-email - A Celery-backed Django Email Backend
     :target: https://pypi.python.org/pypi/django-celery-email
 
 A `Django`_ email backend that uses a `Celery`_ queue for out-of-band sending
-of the messages. (A fork of `django_celery_email`_)
+of the messages.
+
+This is a fork of `django_celery_email`_. As this package has gone unmaintained 
+for some time, we have decided to maintain the package in order to maintain 
+compatability with future Django versions, starting with Django 4.x and 5.x.
 
 .. _`Celery`: http://celeryproject.org/
 .. _`Django`: http://www.djangoproject.org/
@@ -91,7 +95,12 @@ of their delivery.
 Changelog
 =========
 
-4.0.0 - Unreleased
+4.0.1 - 2024-05-28
+------------------
+
+* Update package details for PyPI
+
+4.0.0 - 2024-05-22
 ------------------
 
 * Support for Django 4.0+
@@ -101,7 +110,7 @@ Changelog
 * Drop support for Celery 4
 * Drop support for Python 3.7
 
-3.1.0 - Unreleased
+3.1.0 - 2021.09.21
 ------------------
 
 * Support for Django 3.1
