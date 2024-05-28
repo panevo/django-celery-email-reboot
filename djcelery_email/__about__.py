@@ -3,14 +3,15 @@ __all__ = [
     '__email__', '__license__', '__copyright__',
 ]
 
-__title__ = 'panevo-django-celery-email'
-__summary__ = 'An async Django email backend using celery (fork)'
-__uri__ = 'https://github.com/panevo/django-celery-email'
+__title__ = 'django-celery-email-reboot'
+__summary__ = 'An async Django email backend using celery (forked from django-celery-email)'
+__uri__ = 'https://github.com/Panevo/django-celery-email'
 
-__version__ = '4.0.0'
+__version__ = '4.0.1'
 
+__originalauthor__ = 'Paul McLanahan'
 __author__ = 'Karlo Krakan'
 __email__ = 'karlo.krakan@panevo.com'
 
 __license__ = 'BSD'
-__copyright__ = 'Copyright 2015 {0}'.format(__author__)
+__copyright__ = 'Copyright 2015 {0}'.format(__originalauthor__)
