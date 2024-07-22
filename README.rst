@@ -1,5 +1,5 @@
 ==========================================================
-django-celery-email - A Celery-backed Django Email Backend
+django-celery-email-reboot - A Celery-backed Django Email Backend
 ==========================================================
 
 .. image:: https://img.shields.io/pypi/v/django-celery-email.svg
@@ -11,6 +11,8 @@ of the messages.
 This is a fork of `django_celery_email`_. As this package has gone unmaintained 
 for some time, we have decided to maintain the package in order to maintain 
 compatability with future Django versions, starting with Django 4.x and 5.x.
+
+This new package is available in pypi under the name `django-celery-email-reboot`: https://pypi.org/project/django-celery-email-reboot/
 
 .. _`Celery`: http://celeryproject.org/
 .. _`Django`: http://www.djangoproject.org/
@@ -24,10 +26,15 @@ compatability with future Django versions, starting with Django 4.x and 5.x.
 	* Django 3.0, 3.1, 3.2, 4.0, 4.1, 4.2, 5.0
 	* Celery >= 5.0 (note that using Python >= 3.11 requires Celery >= 5.3)
 
-Using django-celery-email
+Using django-celery-email-reboot
 =========================
 
-To enable ``django-celery-email`` for your project you need to add ``djcelery_email`` to
+Install from Pypi using:
+```
+pip install django-celery-email-reboot
+```
+
+To enable ``django-celery-email-reboot`` for your project you need to add ``djcelery_email`` to
 ``INSTALLED_APPS``::
 
     INSTALLED_APPS += ("djcelery_email",)
