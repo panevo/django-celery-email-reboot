@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+- [#4](https://github.com/panevo/django-celery-email-reboot/pull/4) Add support for Django 5.1, 5.2; Celery 5.3, 5.4, 5.5; Python 3.13. Drop support for Python 3.8.
+
 ## [4.0.1] - 2024-05-28
 
 ### Changed

@@ -1,5 +1,5 @@
-Django>=3.0
-celery>=5.0
+Django>=3.0,<5.3
+celery>=5.0,<6.0
 django-appconf
 flake8
 twine

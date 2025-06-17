@@ -23,7 +23,7 @@ This new package is available in pypi under the name `django-celery-email-reboot
 	This version requires the following versions:
 
 	* Python >= 3.9, < 3.14
-	* Django 3.0, 3.1, 3.2, 4.0, 4.1, 4.2, 5.0, 5.1, 5.2
+	* Django 3.2, 4.0, 4.1, 4.2, 5.0, 5.1, 5.2
 	* Celery >= 5.0 (note that using Python >= 3.11 requires Celery >= 5.3)
 
 Using django-celery-email-reboot
