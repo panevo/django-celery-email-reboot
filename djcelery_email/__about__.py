@@ -7,7 +7,7 @@ __title__ = 'django-celery-email-reboot'
 __summary__ = 'An async Django email backend using celery (forked from django-celery-email)'
 __uri__ = 'https://github.com/Panevo/django-celery-email'
 
-__version__ = '4.0.1'
+__version__ = '4.1.0'
 
 __originalauthor__ = 'Paul McLanahan'
 __author__ = 'Karlo Krakan'
