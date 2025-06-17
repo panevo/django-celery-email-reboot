@@ -30,18 +30,18 @@ setup(
     zip_safe=False,
     python_requires='>=3.9,<3.14',
     install_requires=[
-        # Celery: Compatible across all tested Python versions (3.9 to 3.13)
-        "celery>=5.2,<5.6",
+        # Celery for Python 3.9 to 3.11
+        "celery>=5.2,<5.6; python_version >= '3.9' and python_version <= '3.11'",
+        # Celery for Python 3.12 and 3.13
+        "celery>=5.3,<5.6; python_version >= '3.12'",
         # Django for Python 3.9
-        "Django>=3.0,<4.3; python_version == '3.9'",
+        "Django>=3.2,<4.3; python_version == '3.9'",
         # Django for Python 3.10
         "Django>=4.0,<5.1; python_version == '3.10'",
         # Django for Python 3.11
         "Django>=4.1,<5.3; python_version == '3.11'",
-        # Django for Python 3.12
-        "Django>=4.2,<5.3; python_version == '3.12'",
-        # Django for Python 3.13
-        "Django>=4.2,<5.3; python_version == '3.13'",
+        # Django for Python 3.12 and 3.13
+        "Django>=4.2,<5.3; python_version >= '3.12'",
         # django-appconf
         "django-appconf",
     ],

@@ -23,10 +23,11 @@ This new package is available in pypi under the name `django-celery-email-reboot
     This version requires the following versions:
 
     * Python >= 3.9, < 3.14
-    * Celery >= 5.2, < 5.6
+    * Celery:
+      * >= 5.2, < 5.6 for Python 3.9 to 3.11
+      * >= 5.3, < 5.6 for Python 3.12 and 3.13
     * Django:
-
-      * >= 3.0, < 4.3 for Python 3.9
+      * >= 3.2, < 4.3 for Python 3.9
       * >= 4.0, < 5.1 for Python 3.10
       * >= 4.1, < 5.3 for Python 3.11
       * >= 4.2, < 5.3 for Python 3.12 and 3.13
