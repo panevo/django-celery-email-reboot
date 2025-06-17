@@ -42,6 +42,8 @@ setup(
         "Django>=4.2,<5.3; python_version == '3.12'",
         # Django for Python 3.13
         "Django>=4.2,<5.3; python_version == '3.13'",
+        # django-appconf
+        "django-appconf",
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
