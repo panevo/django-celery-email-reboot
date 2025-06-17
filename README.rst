@@ -1,16 +1,13 @@
-==========================================================
+===========================================================================
 django-celery-email-reboot - A Celery-backed Django Email Backend
-==========================================================
+===========================================================================
 
-.. image:: https://img.shields.io/pypi/v/django-celery-email.svg
-    :target: https://pypi.python.org/pypi/django-celery-email
+.. image:: https://img.shields.io/pypi/v/django-celery-email-reboot.svg
+    :target: https://pypi.python.org/pypi/django-celery-email-reboot
 
-A `Django`_ email backend that uses a `Celery`_ queue for out-of-band sending
-of the messages.
+A `Django`_ email backend that uses a `Celery`_ queue for out-of-band sending of the messages.
 
-This is a fork of `django_celery_email`_. As this package has gone unmaintained 
-for some time, we have decided to maintain the package in order to maintain 
-compatability with future Django versions, starting with Django 4.x and 5.x.
+This is a fork of `django_celery_email`_. As this package has gone unmaintained for some time, we have decided to maintain the package in order to maintain compatibility with future Django versions, starting with Django 4.x and 5.x.
 
 This new package is available in pypi under the name `django-celery-email-reboot`: https://pypi.org/project/django-celery-email-reboot/
 
@@ -24,21 +21,23 @@ This new package is available in pypi under the name `django-celery-email-reboot
 
     * Python >= 3.9, < 3.14
     * Celery:
+
       * >= 5.2, < 5.6 for Python 3.9 to 3.11
       * >= 5.3, < 5.6 for Python 3.12 and 3.13
+
     * Django:
+
       * >= 3.2, < 4.3 for Python 3.9
       * >= 4.0, < 5.1 for Python 3.10
       * >= 4.1, < 5.3 for Python 3.11
       * >= 4.2, < 5.3 for Python 3.12 and 3.13
 
 Using django-celery-email-reboot
-=========================
+==================================
 
-Install from Pypi using:
-```
-pip install django-celery-email-reboot
-```
+Install from Pypi using::
+
+    pip install django-celery-email-reboot
 
 To enable ``django-celery-email-reboot`` for your project you need to add ``djcelery_email`` to
 ``INSTALLED_APPS``::
