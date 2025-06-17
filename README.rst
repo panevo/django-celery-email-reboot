@@ -2,8 +2,8 @@
 django-celery-email-reboot - A Celery-backed Django Email Backend
 ===========================================================================
 
-.. image:: https://img.shields.io/pypi/v/django-celery-email.svg
-    :target: https://pypi.python.org/pypi/django-celery-email
+.. image:: https://img.shields.io/pypi/v/django-celery-email-reboot.svg
+    :target: https://pypi.python.org/pypi/django-celery-email-reboot
 
 A `Django`_ email backend that uses a `Celery`_ queue for out-of-band sending of the messages.
 
