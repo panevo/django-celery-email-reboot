@@ -40,14 +40,13 @@ setup(
         # Django for Python 3.11
         "Django>=4.1,<5.3; python_version == '3.11'",
         # Django for Python 3.12, 3.13 and 3.14
-        "Django>=4.2,<5.3; python_version >= '3.12'",
+        "Django>=4.2; python_version >= '3.12'",
         # django-appconf
         "django-appconf",
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Framework :: Django',
-        'Framework :: Django :: 3.2',
         'Framework :: Django :: 4.0',
         'Framework :: Django :: 4.1',
         'Framework :: Django :: 4.2',

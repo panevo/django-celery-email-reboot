@@ -42,7 +42,7 @@ def email_to_dict(message):
         message_dict['alternatives'] = message.alternatives
     if message.content_subtype != EmailMessage.content_subtype:
         message_dict["content_subtype"] = message.content_subtype
-    if message.mixed_subtype != EmailMessage.mixed_subtype:
+    if hasattr(message, 'mixed_subtype') and message.mixed_subtype != EmailMessage.mixed_subtype:
         message_dict["mixed_subtype"] = message.mixed_subtype
 
     attachments = message.attachments
@@ -99,7 +99,9 @@ def dict_to_email(messagedict):
         message = EmailMessage(**message_kwargs)
 
     # set attributes on message with items removed from message_kwargs earlier
+    # Skip mixed_subtype and alternative_subtype for Django 6.0+ compatibility
     for attr, val in attributes_to_copy.items():
-        setattr(message, attr, val)
+        if attr not in ('mixed_subtype', 'alternative_subtype'):
+            setattr(message, attr, val)
 
     return message
