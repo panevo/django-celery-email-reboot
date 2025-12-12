@@ -40,7 +40,7 @@ setup(
         # Django for Python 3.11
         "Django>=4.1,<5.3; python_version == '3.11'",
         # Django for Python 3.12, 3.13 and 3.14
-        "Django>=4.2; python_version >= '3.12'",
+        "Django>=4.2,<=6.0; python_version >= '3.12'",
         # django-appconf
         "django-appconf",
     ],
@@ -53,6 +53,7 @@ setup(
         'Framework :: Django :: 5.0',
         'Framework :: Django :: 5.1',
         'Framework :: Django :: 5.2',
+        'Framework :: Django :: 6.0',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
