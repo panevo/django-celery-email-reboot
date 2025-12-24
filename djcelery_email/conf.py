@@ -9,3 +9,5 @@ class DjangoCeleryEmailAppConf(AppConf):
     BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     CHUNK_SIZE = 10
     MESSAGE_EXTRA_ATTRIBUTES = None
+    MESSAGE_CLASS = 'django.core.mail.EmailMessage'
+    MULTI_ALTERNATIVES_CLASS = 'django.core.mail.EmailMultiAlternatives'

@@ -10,8 +10,7 @@ from django.test import TestCase
 from django.test.utils import override_settings
 
 import celery
-from djcelery_email import tasks
-from djcelery_email.utils import email_to_dict, dict_to_email
+from djcelery_email import tasks, utils
 
 
 def even(n):
@@ -33,26 +32,34 @@ class TracingBackend(BaseEmailBackend):
         self.__class__.called = True
 
 
+class CustomEmailMessage(mail.EmailMessage):
+    pass
+
+
+class CustomEmailMultiAlternatives(mail.EmailMultiAlternatives):
+    pass
+
+
 class UtilTests(TestCase):
     @override_settings(CELERY_EMAIL_MESSAGE_EXTRA_ATTRIBUTES=['extra_attribute'])
     def test_email_to_dict_extra_attrs(self):
         msg = mail.EmailMessage()
         msg.extra_attribute = {'name': 'val'}
 
-        self.assertEqual(email_to_dict(msg)['extra_attribute'], msg.extra_attribute)
+        self.assertEqual(utils.email_to_dict(msg)['extra_attribute'], msg.extra_attribute)
 
     @override_settings(CELERY_EMAIL_MESSAGE_EXTRA_ATTRIBUTES=['extra_attribute'])
     def test_dict_to_email_extra_attrs(self):
-        msg_dict = email_to_dict(mail.EmailMessage())
+        msg_dict = utils.email_to_dict(mail.EmailMessage())
         msg_dict['extra_attribute'] = {'name': 'val'}
 
-        self.assertEqual(email_to_dict(dict_to_email(msg_dict)), msg_dict)
+        self.assertEqual(utils.email_to_dict(utils.dict_to_email(msg_dict)), msg_dict)
 
     def check_json_of_msg(self, msg):
-        serialized = json.dumps(email_to_dict(msg))
+        serialized = json.dumps(utils.email_to_dict(msg))
         self.assertEqual(
-            email_to_dict(dict_to_email(json.loads(serialized))),
-            email_to_dict(msg))
+            utils.email_to_dict(utils.dict_to_email(json.loads(serialized))),
+            utils.email_to_dict(msg))
 
     def test_email_with_attachment(self):
         file_path = os.path.join(os.path.dirname(__file__), 'image.png')
@@ -83,6 +90,16 @@ class UtilTests(TestCase):
         msg.attach_file(file_path)
         self.check_json_of_msg(msg)
 
+    @override_settings(CELERY_EMAIL_MESSAGE_CLASS='tests.tests.CustomEmailMessage')
+    def test_custom_email_message_class(self):
+        msg = utils.get_email_message_class()()
+        self.assertIsInstance(msg, CustomEmailMessage)
+
+    @override_settings(CELERY_EMAIL_MULTI_ALTERNATIVES_CLASS='tests.tests.CustomEmailMultiAlternatives')
+    def test_custom_email_multi_alternatives_class(self):
+        msg = utils.get_email_multi_alternatives_class()()
+        self.assertIsInstance(msg, CustomEmailMultiAlternatives)
+
 
 class TaskTests(TestCase):
     """
@@ -100,7 +117,7 @@ class TaskTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         # we can't compare them directly as it's converted into a dict
         # for JSONification and then back. Compare dicts instead.
-        self.assertEqual(email_to_dict(msg), email_to_dict(mail.outbox[0]))
+        self.assertEqual(utils.email_to_dict(msg), utils.email_to_dict(mail.outbox[0]))
 
     def test_send_single_email_object_no_backend_kwargs(self):
         """ It should send email with backend_kwargs not provided. """
@@ -109,7 +126,7 @@ class TaskTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         # we can't compare them directly as it's converted into a dict
         # for JSONification and then back. Compare dicts instead.
-        self.assertEqual(email_to_dict(msg), email_to_dict(mail.outbox[0]))
+        self.assertEqual(utils.email_to_dict(msg), utils.email_to_dict(mail.outbox[0]))
 
     def test_send_single_email_object_response(self):
         """ It should return the number of messages sent, 1 here. """
@@ -121,22 +138,22 @@ class TaskTests(TestCase):
     def test_send_single_email_dict(self):
         """ It should accept and send a single EmailMessage dict. """
         msg = mail.EmailMessage()
-        tasks.send_email(email_to_dict(msg), backend_kwargs={})
+        tasks.send_email(utils.email_to_dict(msg), backend_kwargs={})
         self.assertEqual(len(mail.outbox), 1)
         # we can't compare them directly as it's converted into a dict
         # for JSONification and then back. Compare dicts instead.
-        self.assertEqual(email_to_dict(msg), email_to_dict(mail.outbox[0]))
+        self.assertEqual(utils.email_to_dict(msg), utils.email_to_dict(mail.outbox[0]))
 
     def test_send_multiple_email_objects(self):
         """ It should accept and send a list of EmailMessage objects. """
         N = 10
         msgs = [mail.EmailMessage() for i in range(N)]
-        tasks.send_emails([email_to_dict(msg) for msg in msgs],
+        tasks.send_emails([utils.email_to_dict(msg) for msg in msgs],
                           backend_kwargs={})
 
         self.assertEqual(len(mail.outbox), N)
         for i in range(N):
-            self.assertEqual(email_to_dict(msgs[i]), email_to_dict(mail.outbox[i]))
+            self.assertEqual(utils.email_to_dict(msgs[i]), utils.email_to_dict(mail.outbox[i]))
 
     def test_send_multiple_email_dicts(self):
         """ It should accept and send a list of EmailMessage dicts. """
@@ -146,7 +163,7 @@ class TaskTests(TestCase):
 
         self.assertEqual(len(mail.outbox), N)
         for i in range(N):
-            self.assertEqual(email_to_dict(msgs[i]), email_to_dict(mail.outbox[i]))
+            self.assertEqual(utils.email_to_dict(msgs[i]), utils.email_to_dict(mail.outbox[i]))
 
     def test_send_multiple_email_dicts_response(self):
         """ It should return the number of messages sent. """
@@ -161,7 +178,7 @@ class TaskTests(TestCase):
         """ It should use the backend configured in CELERY_EMAIL_BACKEND. """
         TracingBackend.called = False
         msg = mail.EmailMessage()
-        tasks.send_email(email_to_dict(msg), backend_kwargs={})
+        tasks.send_email(utils.email_to_dict(msg), backend_kwargs={})
         self.assertTrue(TracingBackend.called)
 
     @override_settings(CELERY_EMAIL_BACKEND='tests.tests.TracingBackend')
@@ -169,7 +186,7 @@ class TaskTests(TestCase):
         """ It should pass kwargs like username and password to the backend. """
         TracingBackend.kwargs = None
         msg = mail.EmailMessage()
-        tasks.send_email(email_to_dict(msg), backend_kwargs={'foo': 'bar'})
+        tasks.send_email(utils.email_to_dict(msg), backend_kwargs={'foo': 'bar'})
         self.assertEqual(TracingBackend.kwargs.get('foo'), 'bar')
 
     @override_settings(CELERY_EMAIL_BACKEND='tests.tests.TracingBackend')
@@ -177,7 +194,7 @@ class TaskTests(TestCase):
         """ It should pass on kwargs specified as keyword params. """
         TracingBackend.kwargs = None
         msg = mail.EmailMessage()
-        tasks.send_email(email_to_dict(msg), foo='bar')
+        tasks.send_email(utils.email_to_dict(msg), foo='bar')
         self.assertEqual(TracingBackend.kwargs.get('foo'), 'bar')
 
 
@@ -220,7 +237,7 @@ class TaskErrorTests(TestCase):
     def test_send_multiple_emails(self):
         N = 10
         msgs = [mail.EmailMessage(subject="msg %d" % i) for i in range(N)]
-        tasks.send_emails([email_to_dict(msg) for msg in msgs],
+        tasks.send_emails([utils.email_to_dict(msg) for msg in msgs],
                           backend_kwargs={'foo': 'bar'})
 
         # Assert that only "odd"/good messages have been sent.
@@ -236,7 +253,7 @@ class TaskErrorTests(TestCase):
         odd_msgs = [msg for idx, msg in enumerate(msgs) if even(idx)]
         for msg, (args, kwargs) in zip(odd_msgs, self._retry_calls):
             retry_args = args[0]
-            self.assertEqual(retry_args, [[email_to_dict(msg)], {'foo': 'bar'}])
+            self.assertEqual(retry_args, [[utils.email_to_dict(msg)], {'foo': 'bar'}])
             self.assertTrue(isinstance(kwargs.get('exc'), RuntimeError))
             self.assertFalse(kwargs.get('throw', True))
 
