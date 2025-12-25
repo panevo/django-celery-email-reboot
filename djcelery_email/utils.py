@@ -3,7 +3,6 @@ import base64
 from email.mime.base import MIMEBase
 
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives, EmailMessage
 
 
 def chunked(iterator, chunksize):
@@ -23,6 +22,16 @@ def chunked(iterator, chunksize):
         yield chunk
 
 
+def get_email_message_class():
+    from django.utils.module_loading import import_string
+    return import_string(settings.CELERY_EMAIL_MESSAGE_CLASS)
+
+
+def get_email_multi_alternatives_class():
+    from django.utils.module_loading import import_string
+    return import_string(settings.CELERY_EMAIL_MULTI_ALTERNATIVES_CLASS)
+
+
 def email_to_dict(message):
     if isinstance(message, dict):
         return message
@@ -37,12 +46,12 @@ def email_to_dict(message):
                     'headers': message.extra_headers,
                     'cc': message.cc,
                     'reply_to': message.reply_to}
-
+    email_message_class = get_email_message_class()
     if hasattr(message, 'alternatives'):
         message_dict['alternatives'] = message.alternatives
-    if message.content_subtype != EmailMessage.content_subtype:
+    if message.content_subtype != email_message_class.content_subtype:
         message_dict["content_subtype"] = message.content_subtype
-    if hasattr(message, 'mixed_subtype') and message.mixed_subtype != EmailMessage.mixed_subtype:
+    if hasattr(message, 'mixed_subtype') and message.mixed_subtype != email_message_class.mixed_subtype:
         message_dict["mixed_subtype"] = message.mixed_subtype
 
     attachments = message.attachments
@@ -94,14 +103,12 @@ def dict_to_email(messagedict):
         message_kwargs['attachments'].append((filename, contents, mimetype))
 
     if 'alternatives' in message_kwargs:
-        message = EmailMultiAlternatives(**message_kwargs)
+        message = get_email_multi_alternatives_class()(**message_kwargs)
     else:
-        message = EmailMessage(**message_kwargs)
-
+        message = get_email_message_class()(**message_kwargs)
     # set attributes on message with items removed from message_kwargs earlier
     # Skip mixed_subtype and alternative_subtype for Django 6.0+ compatibility
     for attr, val in attributes_to_copy.items():
         if attr not in ('mixed_subtype', 'alternative_subtype'):
             setattr(message, attr, val)
-
     return message
