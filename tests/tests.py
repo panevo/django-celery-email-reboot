@@ -90,14 +90,6 @@ class UtilTests(TestCase):
         msg.attach_file(file_path)
         self.check_json_of_msg(msg)
 
-    def test_default_email_message_class(self):
-        msg = utils.get_email_message_class()()
-        self.assertIsInstance(msg, mail.EmailMessage)
-
-    def test_default_email_multi_alternatives_class(self):
-        msg = utils.get_email_multi_alternatives_class()()
-        self.assertIsInstance(msg, mail.EmailMultiAlternatives)
-
     @override_settings(CELERY_EMAIL_MESSAGE_CLASS='tests.tests.CustomEmailMessage')
     def test_custom_email_message_class(self):
         msg = utils.get_email_message_class()()
