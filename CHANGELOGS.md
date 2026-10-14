@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] - Unreleased
+
+### Added
+
+- Add support for Django 6.1
+- [#20](https://github.com/panevo/django-celery-email-reboot/issues/20) Add a system check warning (`djcelery_email.W001`) when the original `django-celery-email` package is installed alongside this one
+
+### Changed
+
+- [#19](https://github.com/panevo/django-celery-email-reboot/issues/19) Remove the upper bounds on Django and Python. A newer Django or Python release no longer makes package installers silently fall back to an old, incompatible version of this package
+- Allow any Celery 5.x release
+
+### Fixed
+
+- [#17](https://github.com/panevo/django-celery-email-reboot/pull/17) Fix `AttributeError` when calling `email_to_dict` without importing `djcelery_email.tasks` first (#16)
+
+### Removed
+
+- Drop support for Django 4.0 and 4.1 (end of life)
+
 ## [4.2.1] - 2026-02-18
 
 ### Added
