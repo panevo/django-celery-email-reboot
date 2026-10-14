@@ -42,3 +42,7 @@ venv/
 
 # IDE configs
 .vscode/
+# Test and lint caches
+.coverage.*
+.pytest_cache
+.ruff_cache

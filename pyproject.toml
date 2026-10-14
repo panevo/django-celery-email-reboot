@@ -51,8 +51,43 @@ Homepage = "https://github.com/panevo/django-celery-email-reboot"
 Changelog = "https://github.com/panevo/django-celery-email-reboot/blob/master/CHANGELOGS.md"
 Issues = "https://github.com/panevo/django-celery-email-reboot/issues"
 
-[tool.setuptools]
-packages = ["djcelery_email"]
+[dependency-groups]
+test = [
+    "coverage>=7.10",
+    "pytest>=8",
+    "pytest-django>=4.11",
+]
+lint = ["ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.dynamic]
 version = { attr = "djcelery_email.__about__.__version__" }
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+django_find_project = false
+testpaths = ["tests"]
+python_files = ["tests.py"]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+source_pkgs = ["djcelery_email"]
+
+[tool.coverage.paths]
+source = [
+    "src/djcelery_email",
+    "*/site-packages/djcelery_email",
+]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
