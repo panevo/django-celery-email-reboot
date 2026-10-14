@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#19](https://github.com/panevo/django-celery-email-reboot/issues/19) Remove the upper bounds on Django and Python. A newer Django or Python release no longer makes package installers silently fall back to an old, incompatible version of this package
 - Allow any Celery 5.x release
+- Move the package configuration from `setup.py` to `pyproject.toml`
+- Publish releases to PyPI using trusted publishing
 
 ### Fixed
 
