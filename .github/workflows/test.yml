@@ -9,31 +9,105 @@ on:
 permissions: {}
 
 jobs:
-  build:
+  tests:
+    name: Python ${{ matrix.python }} / Django ${{ matrix.django }} / Celery ${{ matrix.celery }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       fail-fast: false
+      # Keep this list in sync with the envlist in tox.ini
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        include:
+          - { python: '3.10', django: '4.2', celery: '5.2' }
+          - { python: '3.12', django: '4.2', celery: '5.6' }
+          - { python: '3.10', django: '5.0', celery: '5.6' }
+          - { python: '3.12', django: '5.0', celery: '5.6' }
+          - { python: '3.10', django: '5.1', celery: '5.6' }
+          - { python: '3.13', django: '5.1', celery: '5.6' }
+          - { python: '3.10', django: '5.2', celery: '5.6' }
+          - { python: '3.11', django: '5.2', celery: '5.4' }
+          - { python: '3.12', django: '5.2', celery: '5.3' }
+          - { python: '3.13', django: '5.2', celery: '5.5' }
+          - { python: '3.14', django: '5.2', celery: '5.6' }
+          - { python: '3.12', django: '6.0', celery: '5.6' }
+          - { python: '3.14', django: '6.0', celery: '5.6' }
+          - { python: '3.12', django: '6.1', celery: '5.6' }
+          - { python: '3.14', django: '6.1', celery: '5.6' }
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
         persist-credentials: false
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python }}
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ matrix.python }}
     - name: Install dependencies
+      run: python -m pip install --upgrade pip tox
+    - name: Run tests
+      env:
+        PYTHON: ${{ matrix.python }}
+        DJANGO: ${{ matrix.django }}
+        CELERY: ${{ matrix.celery }}
+      run: tox -e "py${PYTHON//./}-dj${DJANGO//./}-celery${CELERY//./}"
+    - name: Upload coverage data
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+      with:
+        name: coverage-${{ matrix.python }}-${{ matrix.django }}-${{ matrix.celery }}
+        path: .coverage.*
+        include-hidden-files: true
+        if-no-files-found: error
+
+  coverage:
+    name: Coverage
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+      with:
+        python-version: '3.x'
+    - name: Download coverage data
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+      with:
+        pattern: coverage-*
+        merge-multiple: true
+    - name: Install dependencies
+      run: python -m pip install --upgrade pip coverage
+    - name: Combine and check coverage
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install tox tox-gh-actions
-    - name: Test with tox
-      run: tox
+        python -m coverage combine
+        python -m coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+        python -m coverage report
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: python -m pip install --upgrade pip tox
+    - name: Run ruff
+      run: tox -e lint
 
   package:
+    name: Package
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -52,3 +126,23 @@ jobs:
       run: python -m build
     - name: Check package
       run: python -m twine check --strict dist/*
+
+  all-checks:
+    # The only job required by the master branch ruleset
+    name: All checks
+    if: always()
+    needs: [tests, coverage, lint, package]
+    runs-on: ubuntu-latest
+    permissions: {}
+
+    steps:
+    - name: Check that all jobs succeeded
+      env:
+        RESULTS: ${{ join(needs.*.result, ' ') }}
+      run: |
+        for result in $RESULTS; do
+          if [ "$result" != "success" ]; then
+            echo "::error::One or more jobs did not succeed: $RESULTS"
+            exit 1
+          fi
+        done
