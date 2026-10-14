@@ -1,8 +1,11 @@
 import json
 import os.path
+import subprocess
+import sys
+import tempfile
 from email.mime.image import MIMEImage
 
-from django.core import mail
+from django.core import checks, mail
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.backends import locmem
 from django.core.mail import EmailMultiAlternatives
@@ -99,6 +102,22 @@ class UtilTests(TestCase):
     def test_custom_email_multi_alternatives_class(self):
         msg = utils.get_email_multi_alternatives_class()()
         self.assertIsInstance(msg, CustomEmailMultiAlternatives)
+
+    def test_email_to_dict_without_tasks_imported(self):
+        # utils must load the default settings itself instead of relying on
+        # tasks.py having imported conf.py first (#16). Needs a fresh
+        # interpreter because this test module already imports tasks.
+        code = (
+            "import django\n"
+            "from django.conf import settings\n"
+            "settings.configure()\n"
+            "django.setup()\n"
+            "from django.core.mail import EmailMessage\n"
+            "from djcelery_email.utils import email_to_dict\n"
+            "email_to_dict(EmailMessage())\n"
+        )
+        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 class TaskTests(TestCase):
@@ -410,3 +429,28 @@ class IntegrationTests(TestCase):
             self.assertEqual(len(mail.outbox), 11)
             self.assertEqual(mail.outbox[0].subject, 'mass 0')
             self.assertEqual(mail.outbox[1].subject, 'mass 1')
+
+
+class ConflictingPackageCheckTests(TestCase):
+    def conflict_warnings(self):
+        return [m for m in checks.run_checks() if m.id == 'djcelery_email.W001']
+
+    def test_warns_when_django_celery_email_is_installed(self):
+        # A dist-info folder on sys.path is all importlib.metadata needs to
+        # report the original django-celery-email as installed (#20).
+        with tempfile.TemporaryDirectory() as site_dir:
+            dist_info = os.path.join(site_dir, 'django_celery_email-3.0.0.dist-info')
+            os.mkdir(dist_info)
+            with open(os.path.join(dist_info, 'METADATA'), 'w') as f:
+                f.write('Metadata-Version: 2.1\nName: django-celery-email\nVersion: 3.0.0\n')
+            sys.path.insert(0, site_dir)
+            try:
+                warnings = self.conflict_warnings()
+            finally:
+                sys.path.remove(site_dir)
+
+        self.assertEqual(len(warnings), 1)
+        self.assertIn('django-celery-email', warnings[0].msg)
+
+    def test_no_warning_without_django_celery_email(self):
+        self.assertEqual(self.conflict_warnings(), [])
