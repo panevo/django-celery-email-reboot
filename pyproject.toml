@@ -9,7 +9,7 @@ description = "An async Django email backend using celery (forked from django-ce
 readme = "README.rst"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
-authors = [{ name = "Karlo Krakan", email = "karlo.krakan@panevo.com" }]
+authors = [{ name = "Panevo Services Ltd.", email = "info@panevo.com" }]
 # Avoid upper bounds on Python and Django: when a new release is excluded,
 # resolvers silently fall back to old versions of this package that are
 # broken on it instead of failing (#19). Django declares its own Python support.
