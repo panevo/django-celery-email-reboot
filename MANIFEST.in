@@ -2,4 +2,4 @@ include README.rst
 include LICENSE
 include MANIFEST.in
 recursive-include tests *.py
-recursive-include djcelery_email *.py
+recursive-include src/djcelery_email *.py

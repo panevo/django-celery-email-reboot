@@ -51,8 +51,8 @@ Homepage = "https://github.com/panevo/django-celery-email-reboot"
 Changelog = "https://github.com/panevo/django-celery-email-reboot/blob/master/CHANGELOGS.md"
 Issues = "https://github.com/panevo/django-celery-email-reboot/issues"
 
-[tool.setuptools]
-packages = ["djcelery_email"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.dynamic]
 version = { attr = "djcelery_email.__about__.__version__" }
