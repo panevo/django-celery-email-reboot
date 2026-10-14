@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add support for Django 6.1
+- [#18](https://github.com/panevo/django-celery-email-reboot/issues/18) Add support for the `MAILERS` setting in Django 6.1. Set the `using` option to the alias of the mailer that should send the email (see the README). When upgrading a project that uses `MAILERS`, update the Celery workers before the web servers, since workers running an older version can't handle these tasks
 - [#20](https://github.com/panevo/django-celery-email-reboot/issues/20) Add a system check warning (`djcelery_email.W001`) when the original `django-celery-email` package is installed alongside this one
 
 ### Changed
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix the `fail_silently` deprecation warning from `CeleryEmailBackend` on Django 6.1
 - [#17](https://github.com/panevo/django-celery-email-reboot/pull/17) Fix `AttributeError` when calling `email_to_dict` without importing `djcelery_email.tasks` first (#16)
 
 ### Removed

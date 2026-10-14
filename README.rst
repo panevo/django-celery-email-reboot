@@ -56,6 +56,32 @@ procedure will most likely be to get your email working using only Django, then
 change ``EMAIL_BACKEND`` to ``CELERY_EMAIL_BACKEND``, and then add the new
 ``EMAIL_BACKEND`` setting from above.
 
+Using ``MAILERS`` (Django 6.1+)
+-------------------------------
+
+Django 6.1 replaces the ``EMAIL_BACKEND`` setting with ``MAILERS``. To use
+``django-celery-email-reboot`` with ``MAILERS``, set ``CeleryEmailBackend`` as the ``BACKEND`` of a
+mailer and set the ``using`` option to the alias of the mailer that should send the email::
+
+    MAILERS = {
+        "default": {
+            "BACKEND": "djcelery_email.backends.CeleryEmailBackend",
+            "OPTIONS": {
+                "using": "smtp",
+            },
+        },
+        "smtp": {
+            "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "OPTIONS": {
+                "host": "smtp.example.com",
+            },
+        },
+    }
+
+When ``MAILERS`` is used, the ``CELERY_EMAIL_BACKEND`` setting is ignored. The email is sent from the
+Celery worker through the mailer set in ``using``, so the workers need the same ``MAILERS`` setting.
+The other ``CELERY_EMAIL_*`` settings described below still apply.
+
 Mass email are sent in chunks of size ``CELERY_EMAIL_CHUNK_SIZE`` (defaults to 10).
 
 If you need to set any of the settings (attributes) you'd normally be able to set on a
