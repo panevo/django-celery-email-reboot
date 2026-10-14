@@ -13,10 +13,6 @@ INSTALLED_APPS = (
 
 SECRET_KEY = 'unique snowflake'
 
-# Django 1.7 throws dire warnings if this is not set.
-# We don't actually use any middleware, given that there are no views.
-MIDDLEWARE_CLASSES = ()
-
 CELERY_EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 CELERY_EMAIL_TASK_CONFIG = {
     'queue': 'django_email',

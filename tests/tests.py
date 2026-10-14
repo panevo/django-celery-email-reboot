@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 from email.mime.image import MIMEImage
+from unittest import mock
 
 from django.core import checks, mail
 from django.core.mail.backends.base import BaseEmailBackend
@@ -220,7 +221,7 @@ class TaskTests(TestCase):
 class EvenErrorBackend(locmem.EmailBackend):
     """ Fails to deliver every 2nd message. """
     def __init__(self, *args, **kwargs):
-        super(EvenErrorBackend, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.message_count = 0
 
     def send_messages(self, messages):
@@ -228,7 +229,7 @@ class EvenErrorBackend(locmem.EmailBackend):
         if even(self.message_count-1):
             raise RuntimeError("Something went wrong sending the message")
         else:
-            return super(EvenErrorBackend, self).send_messages(messages)
+            return super().send_messages(messages)
 
 
 class TaskErrorTests(TestCase):
@@ -236,21 +237,17 @@ class TaskErrorTests(TestCase):
     Tests that the 'tasks.send_emails' task does not crash if a single message
     could not be sent and that it requeues that message.
     """
-    # TODO: replace setUp/tearDown with 'unittest.mock' at some point
     def setUp(self):
-        super(TaskErrorTests, self).setUp()
+        super().setUp()
 
         self._retry_calls = []
 
         def mock_retry(*args, **kwargs):
             self._retry_calls.append((args, kwargs))
 
-        self._old_retry = tasks.send_emails.retry
-        tasks.send_emails.retry = mock_retry
-
-    def tearDown(self):
-        super(TaskErrorTests, self).tearDown()
-        tasks.send_emails.retry = self._old_retry
+        patcher = mock.patch.object(tasks.send_emails, 'retry', mock_retry)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     @override_settings(CELERY_EMAIL_BACKEND='tests.tests.EvenErrorBackend')
     def test_send_multiple_emails(self):
@@ -283,21 +280,17 @@ class BackendTests(TestCase):
     i.e. it submits the correct number of jobs (according to the chunk size)
     and passes backend parameters to the task.
     """
-    # TODO: replace setUp/tearDown with 'unittest.mock' at some point
     def setUp(self):
-        super(BackendTests, self).setUp()
+        super().setUp()
 
         self._delay_calls = []
 
         def mock_delay(*args, **kwargs):
             self._delay_calls.append((args, kwargs))
 
-        self._old_delay = tasks.send_emails.delay
-        tasks.send_emails.delay = mock_delay
-
-    def tearDown(self):
-        super(BackendTests, self).tearDown()
-        tasks.send_emails.delay = self._old_delay
+        patcher = mock.patch.object(tasks.send_emails, 'delay', mock_delay)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_backend_parameters(self):
         """ Our backend should pass kwargs to the 'send_emails' task. """
@@ -358,13 +351,11 @@ class IntegrationTests(TestCase):
     # the future?)
 
     def setUp(self):
-        super(IntegrationTests, self).setUp()
-        # TODO: replace with 'unittest.mock' at some point
-        celery.current_app.conf.task_always_eager = True
-
-    def tearDown(self):
-        super(IntegrationTests, self).tearDown()
-        celery.current_app.conf.task_always_eager = False
+        super().setUp()
+        # Celery keeps its settings in a mapping, which mock.patch.object can't restore.
+        conf = celery.current_app.conf
+        self.addCleanup(setattr, conf, 'task_always_eager', conf.task_always_eager)
+        conf.task_always_eager = True
 
     def test_sending_email(self):
         [result] = mail.send_mail('test', 'Testing with Celery! w00t!!', 'from@example.com',
