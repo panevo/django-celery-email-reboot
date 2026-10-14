@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-celery-email-reboot"
+dynamic = ["version"]
+description = "An async Django email backend using celery (forked from django-celery-email)"
+readme = "README.rst"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [{ name = "Karlo Krakan", email = "karlo.krakan@panevo.com" }]
+# Avoid upper bounds on Python and Django: when a new release is excluded,
+# resolvers silently fall back to old versions of this package that are
+# broken on it instead of failing (#19). Django declares its own Python support.
+requires-python = ">=3.10"
+dependencies = [
+    # Celery 5.3 is the first release to support Python 3.12
+    "celery>=5.2,<6; python_version < '3.12'",
+    "celery>=5.3,<6; python_version >= '3.12'",
+    "Django>=4.2",
+    "django-appconf",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.0",
+    "Framework :: Django :: 6.1",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX",
+    "Topic :: Communications",
+    "Topic :: Communications :: Email",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://github.com/panevo/django-celery-email-reboot"
+Changelog = "https://github.com/panevo/django-celery-email-reboot/blob/master/CHANGELOGS.md"
+Issues = "https://github.com/panevo/django-celery-email-reboot/issues"
+
+[tool.setuptools]
+packages = ["djcelery_email"]
+
+[tool.setuptools.dynamic]
+version = { attr = "djcelery_email.__about__.__version__" }

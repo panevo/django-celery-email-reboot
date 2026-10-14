@@ -1,6 +1,5 @@
 include README.rst
 include LICENSE
 include MANIFEST.in
-include requirements.txt
 recursive-include tests *.py
 recursive-include djcelery_email *.py
