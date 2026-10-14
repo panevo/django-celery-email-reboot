@@ -21,7 +21,7 @@ if 'base' in TASK_CONFIG and isinstance(TASK_CONFIG['base'], str):
 
 
 @shared_task(**TASK_CONFIG)
-def send_emails(messages, backend_kwargs=None, **kwargs):
+def send_emails(messages, backend_kwargs=None, *, using=None, **kwargs):
     # backward compat: handle **kwargs and missing backend_kwargs
     combined_kwargs = {}
     if backend_kwargs is not None:
@@ -35,11 +35,19 @@ def send_emails(messages, backend_kwargs=None, **kwargs):
     # make sure they're all dicts
     messages = [email_to_dict(m) for m in messages]
 
-    conn = get_connection(backend=settings.CELERY_EMAIL_BACKEND, **combined_kwargs)
+    if using is None:
+        conn = get_connection(backend=settings.CELERY_EMAIL_BACKEND, **combined_kwargs)
+    else:
+        # Configured with MAILERS (Django 6.1+): send through the wrapped mailer.
+        from django.core.mail import mailers
+        conn = mailers[using]
     try:
         conn.open()
     except Exception:
-        logger.exception("Cannot reach CELERY_EMAIL_BACKEND %s", settings.CELERY_EMAIL_BACKEND)
+        if using is None:
+            logger.exception("Cannot reach CELERY_EMAIL_BACKEND %s", settings.CELERY_EMAIL_BACKEND)
+        else:
+            logger.exception("Cannot reach mailer %r", using)
 
     messages_sent = 0
 
@@ -54,7 +62,8 @@ def send_emails(messages, backend_kwargs=None, **kwargs):
             # could be any number of things, depending on the backend
             logger.warning("Failed to send email message to %r, retrying. (%r)",
                            message['to'], e)
-            send_emails.retry([[message], combined_kwargs], exc=e, throw=False)
+            retry_kwargs = {'using': using} if using is not None else None
+            send_emails.retry([[message], combined_kwargs], kwargs=retry_kwargs, exc=e, throw=False)
 
     conn.close()
     return messages_sent
