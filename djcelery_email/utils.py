@@ -4,6 +4,8 @@ from email.mime.base import MIMEBase
 
 from django.conf import settings
 
+# Make sure our AppConf is loaded properly.
+import djcelery_email.conf  # noqa
 
 def chunked(iterator, chunksize):
     """
