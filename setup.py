@@ -29,31 +29,26 @@ setup(
     packages=find_packages(exclude=['ez_setup', 'tests']),
     scripts=[],
     zip_safe=False,
-    python_requires='>=3.10,<3.15',
+    # Avoid upper bounds on Python and Django: when a new release is excluded,
+    # resolvers silently fall back to old versions of this package that are
+    # broken on it instead of failing (#19). Django declares its own Python support.
+    python_requires='>=3.10',
     install_requires=[
-        # Celery for Python 3.10 and 3.11
-        "celery>=5.2,<5.7; python_version >= '3.10' and python_version <= '3.11'",
-        # Celery for Python 3.12, 3.13 and 3.14
-        "celery>=5.3,<5.7; python_version >= '3.12'",
-        # Django for Python 3.10
-        "Django>=4.0,<5.1; python_version == '3.10'",
-        # Django for Python 3.11
-        "Django>=4.1,<5.3; python_version == '3.11'",
-        # Django for Python 3.12, 3.13 and 3.14
-        "Django>=4.2,<6.1; python_version >= '3.12'",
-        # django-appconf
+        # Celery 5.3 is the first release to support Python 3.12
+        "celery>=5.2,<6; python_version < '3.12'",
+        "celery>=5.3,<6; python_version >= '3.12'",
+        "Django>=4.2",
         "django-appconf",
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Framework :: Django',
-        'Framework :: Django :: 4.0',
-        'Framework :: Django :: 4.1',
         'Framework :: Django :: 4.2',
         'Framework :: Django :: 5.0',
         'Framework :: Django :: 5.1',
         'Framework :: Django :: 5.2',
         'Framework :: Django :: 6.0',
+        'Framework :: Django :: 6.1',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',

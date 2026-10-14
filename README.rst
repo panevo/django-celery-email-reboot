@@ -7,7 +7,7 @@ django-celery-email-reboot - A Celery-backed Django Email Backend
 
 A `Django`_ email backend that uses a `Celery`_ queue for out-of-band sending of the messages.
 
-This is a fork of `django_celery_email`_. As this package has gone unmaintained for some time, we have decided to maintain the package in order to maintain compatibility with future Django versions, starting with Django 4.x and 5.x.
+This is a fork of `django_celery_email`_. As this package has gone unmaintained for some time, we have decided to maintain the package in order to maintain compatibility with future Django versions, starting with Django 4.x, 5.x and 6.x.
 
 This new package is available in pypi under the name `django-celery-email-reboot`: https://pypi.org/project/django-celery-email-reboot/
 
@@ -19,17 +19,9 @@ This new package is available in pypi under the name `django-celery-email-reboot
 
     This version requires the following versions:
 
-    * Python >= 3.10, < 3.15
-    * Celery:
-
-      * >= 5.2, < 5.7 for Python 3.10 and 3.11
-      * >= 5.3, < 5.7 for Python 3.12, 3.13 and 3.14
-
-    * Django:
-
-      * >= 4.0, < 5.1 for Python 3.10
-      * >= 4.1, < 5.3 for Python 3.11
-      * >= 4.2, < 5.3 for Python 3.12, 3.13 and 3.14
+    * Python >= 3.10
+    * Celery >= 5.2, < 6 (>= 5.3 on Python 3.12 and newer)
+    * Django >= 4.2 (tested with 4.2, 5.0, 5.1, 5.2, 6.0 and 6.1)
 
 Using django-celery-email-reboot
 ==================================
@@ -37,6 +29,15 @@ Using django-celery-email-reboot
 Install from Pypi using::
 
     pip install django-celery-email-reboot
+
+If you are switching from the original ``django-celery-email``, uninstall it first. Both packages
+install the same ``djcelery_email`` module, so uninstalling ``django-celery-email`` afterwards also
+deletes the files of this package::
+
+    pip uninstall django-celery-email
+    pip install django-celery-email-reboot
+
+If both packages are installed, a system check warning (``djcelery_email.W001``) is shown.
 
 To enable ``django-celery-email-reboot`` for your project you need to add ``djcelery_email`` to
 ``INSTALLED_APPS``::
