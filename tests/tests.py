@@ -3,6 +3,8 @@ import os.path
 import subprocess
 import sys
 import tempfile
+import unittest
+import warnings
 from email.mime.image import MIMEImage
 from unittest import mock
 
@@ -15,6 +17,7 @@ from django.test.utils import override_settings
 
 import celery
 from djcelery_email import tasks, utils
+from djcelery_email.backends import CeleryEmailBackend
 
 
 def even(n):
@@ -445,3 +448,71 @@ class ConflictingPackageCheckTests(TestCase):
 
     def test_no_warning_without_django_celery_email(self):
         self.assertEqual(self.conflict_warnings(), [])
+
+
+class FailSilentlyTests(TestCase):
+    def test_fail_silently_without_deprecation_warning(self):
+        # Django 6.1 deprecates passing fail_silently to BaseEmailBackend, so the
+        # backend has to handle it itself.
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            backend = CeleryEmailBackend(fail_silently=True)
+        self.assertTrue(backend.fail_silently)
+
+
+HAS_MAILERS = hasattr(mail, 'mailers')
+
+MAILERS = {
+    'default': {
+        'BACKEND': 'djcelery_email.backends.CeleryEmailBackend',
+        'OPTIONS': {'using': 'wrapped'},
+    },
+    'wrapped': {
+        'BACKEND': 'django.core.mail.backends.locmem.EmailBackend',
+    },
+}
+
+
+@unittest.skipUnless(HAS_MAILERS, 'MAILERS requires Django 6.1+')
+@override_settings(MAILERS=MAILERS)
+class MailersTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        conf = celery.current_app.conf
+        self.addCleanup(setattr, conf, 'task_always_eager', conf.task_always_eager)
+        conf.task_always_eager = True
+
+    def assertInvalidMailer(self, options, message):
+        mailers = {**MAILERS, 'default': {**MAILERS['default'], 'OPTIONS': options}}
+        with override_settings(MAILERS=mailers):
+            with self.assertRaisesMessage(mail.InvalidMailer, message):
+                mail.mailers['default']
+
+    def test_sends_through_wrapped_mailer(self):
+        [result] = mail.send_mail('test', 'body', 'from@example.com', ['to@example.com'])
+
+        self.assertEqual(result.get(), 1)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].sent_using, 'wrapped')
+
+    def test_retry_keeps_wrapped_mailer(self):
+        mailers = {**MAILERS, 'wrapped': {'BACKEND': 'tests.tests.EvenErrorBackend'}}
+        msgs = [mail.EmailMessage(subject="msg %d" % i) for i in range(2)]
+
+        with override_settings(MAILERS=mailers), mock.patch.object(tasks.send_emails, 'retry') as retry:
+            tasks.send_emails([utils.email_to_dict(msg) for msg in msgs], using='wrapped')
+
+        retry.assert_called_once()
+        self.assertEqual(retry.call_args.kwargs['kwargs'], {'using': 'wrapped'})
+
+    def test_using_is_required(self):
+        self.assertInvalidMailer({}, "'using'")
+
+    def test_using_cannot_refer_to_itself(self):
+        self.assertInvalidMailer({'using': 'default'}, "'using'")
+
+    def test_using_must_refer_to_existing_mailer(self):
+        self.assertInvalidMailer({'using': 'missing'}, "'missing'")
+
+    def test_unknown_options_are_rejected(self):
+        self.assertInvalidMailer({'using': 'wrapped', 'host': 'smtp.example.com'}, "'host'")
