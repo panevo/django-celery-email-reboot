@@ -1,5 +1,7 @@
 import json
 import os.path
+import subprocess
+import sys
 from email.mime.image import MIMEImage
 
 from django.core import mail
@@ -99,6 +101,22 @@ class UtilTests(TestCase):
     def test_custom_email_multi_alternatives_class(self):
         msg = utils.get_email_multi_alternatives_class()()
         self.assertIsInstance(msg, CustomEmailMultiAlternatives)
+
+    def test_email_to_dict_without_tasks_imported(self):
+        # utils must load the default settings itself instead of relying on
+        # tasks.py having imported conf.py first (#16). Needs a fresh
+        # interpreter because this test module already imports tasks.
+        code = (
+            "import django\n"
+            "from django.conf import settings\n"
+            "settings.configure()\n"
+            "django.setup()\n"
+            "from django.core.mail import EmailMessage\n"
+            "from djcelery_email.utils import email_to_dict\n"
+            "email_to_dict(EmailMessage())\n"
+        )
+        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 class TaskTests(TestCase):
