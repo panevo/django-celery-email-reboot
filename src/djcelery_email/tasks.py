@@ -1,5 +1,7 @@
 from django.conf import settings
-from django.core.mail import EmailMessage, get_connection
+from django.core import mail
+from django.core.mail import EmailMessage
+from django.utils.module_loading import import_string
 
 from celery import shared_task
 
@@ -36,11 +38,12 @@ def send_emails(messages, backend_kwargs=None, *, using=None, **kwargs):
     messages = [email_to_dict(m) for m in messages]
 
     if using is None:
-        conn = get_connection(backend=settings.CELERY_EMAIL_BACKEND, **combined_kwargs)
+        # Configured with EMAIL_BACKEND. Create the backend like get_connection() does,
+        # which Django 6.1 deprecates.
+        conn = import_string(settings.CELERY_EMAIL_BACKEND)(**combined_kwargs)
     else:
         # Configured with MAILERS (Django 6.1+): send through the wrapped mailer.
-        from django.core.mail import mailers
-        conn = mailers[using]
+        conn = mail.mailers[using]
     try:
         conn.open()
     except Exception:
