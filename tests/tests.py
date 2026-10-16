@@ -353,15 +353,6 @@ class EvenErrorBackend(locmem.EmailBackend):
             return super().send_messages(messages)
 
 
-class RecordingBackend(locmem.EmailBackend):
-    """ Records the options each instance is created with. """
-    created_with = []
-
-    def __init__(self, **kwargs):
-        RecordingBackend.created_with.append(kwargs)
-        super().__init__(**kwargs)
-
-
 class TaskWarningTests(TestCase):
     def test_task_does_not_use_deprecated_get_connection(self):
         msg = mail.EmailMessage('test', 'body', 'from@example.com', ['to@example.com'])
@@ -671,31 +662,17 @@ class MailersTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].sent_using, 'default')
 
-    def test_task_queued_before_mailers_keeps_backend_options(self):
-        RecordingBackend.created_with = []
-        mailers = {**MAILERS, 'wrapped': {'BACKEND': 'tests.tests.RecordingBackend'}}
+    def test_task_queued_before_mailers_ignores_backend_options(self):
         msg = mail.EmailMessage('test', 'body', 'from@example.com', ['to@example.com'])
 
-        with override_settings(MAILERS=mailers):
+        with self.assertLogs('djcelery_email.tasks', 'WARNING') as logs:
             tasks.send_emails([utils.email_to_dict(msg)], {'username': 'user', 'password': 'secret'})
 
-        self.assertEqual(len(mail.outbox), 1)
-        [options] = RecordingBackend.created_with
-        self.assertEqual((options['username'], options['password']), ('user', 'secret'))
-
-    def test_auth_arguments_reach_wrapped_mailer(self):
-        RecordingBackend.created_with = []
-        mailers = {**MAILERS, 'wrapped': {'BACKEND': 'tests.tests.RecordingBackend'}}
-
-        with override_settings(MAILERS=mailers), warnings.catch_warnings():
-            # Django 6.1 deprecates auth_user and auth_password
-            warnings.simplefilter('ignore')
-            mail.send_mail('test', 'body', 'from@example.com', ['to@example.com'],
-                           auth_user='user', auth_password='secret')
-
-        self.assertEqual(len(mail.outbox), 1)
-        [options] = RecordingBackend.created_with
-        self.assertEqual((options['username'], options['password']), ('user', 'secret'))
+        self.assertEqual(mail.outbox[0].sent_using, 'wrapped')
+        [log] = logs.output
+        self.assertIn("'wrapped'", log)
+        self.assertIn('password, username', log)
+        self.assertNotIn('secret', log)
 
     def test_check_accepts_valid_mailers(self):
         self.assertEqual(self.mailer_errors(), [])
