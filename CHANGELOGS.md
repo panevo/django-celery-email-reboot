@@ -9,15 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add a system check error (`djcelery_email.E001`) for a `CeleryEmailBackend` mailer in `MAILERS` with invalid `OPTIONS`, such as a missing `using`. Previously the error only showed when the first email was sent
+- Add a system check (`djcelery_email.E001`) for invalid `CeleryEmailBackend` options in `MAILERS`
 
 ### Fixed
 
-- Send email that was queued before the project switched from `EMAIL_BACKEND` to `MAILERS`. Previously Celery workers configured with `MAILERS` failed with `RuntimeError: get_connection(backend, ...) is not supported with MAILERS.` and the email was not sent. It is now sent through the mailer that the default `CeleryEmailBackend` mailer wraps, or through the default mailer
-- With `MAILERS`, pass the deprecated per-call options of `send_mail()`, `send_mass_mail()` and `get_connection()`, such as `auth_user` and `auth_password`, on to the mailer in `using`. Previously they were ignored
-- Fix the `get_connection()` deprecation warning that Celery workers showed for every email on Django 6.1 with `EMAIL_BACKEND`
-- Fix `ValueError` when sending email with an `email.message.MIMEPart` attachment, the kind of attachment Django 6.0 recommends
-- Keep the headers of MIME attachments, such as the `Content-ID` of an inline image. Previously MIME attachments were sent as plain attachments without their headers, so `cid:` images in HTML email did not show. Update the Celery workers before the web servers, since workers running an older version can't handle MIME attachments queued by this version
+- Fix email being lost when switching to `MAILERS`
+- Pass `auth_user` and `auth_password` on to the mailer in `using`
+- Fix the `get_connection()` deprecation warning for every email on Django 6.1
+- Fix `ValueError` for `MIMEPart` attachments
+- Keep the headers of MIME attachments, such as the `Content-ID` of inline images. Update the Celery workers before the web servers
 
 ## [4.3.0] - 2026-10-14
 
