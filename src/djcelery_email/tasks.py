@@ -45,8 +45,12 @@ def send_emails(messages, backend_kwargs=None, *, using=None, **kwargs):
         # which Django 6.1 deprecates.
         conn = import_string(settings.CELERY_EMAIL_BACKEND)(**combined_kwargs)
     else:
-        # Configured with MAILERS (Django 6.1+): send through the wrapped mailer.
-        conn = _get_mailer(using, combined_kwargs)
+        # Configured with MAILERS (Django 6.1+): send through the wrapped mailer, which has
+        # its options in MAILERS.
+        if combined_kwargs:
+            logger.warning("Sending through mailer %r without the options it was queued with: %s",
+                           using, ", ".join(sorted(combined_kwargs)))
+        conn = mail.mailers[using]
     try:
         conn.open()
     except Exception:
@@ -86,19 +90,6 @@ def _mailer_for_tasks_without_using():
 
     default = mail.mailers.default
     return default.using if isinstance(default, CeleryEmailBackend) else 'default'
-
-
-def _get_mailer(using, options):
-    if not options:
-        return mail.mailers[using]
-    # RemovedInDjango2028Warning: Django 6.1 passes the deprecated per-call options of
-    # get_connection(), send_mail() and send_mass_mail(), such as auth_user, to the default
-    # mailer. Pass them on to the mailer that sends the email, the same way.
-    if using not in mail.mailers:
-        raise mail.MailerDoesNotExist(alias=using)
-    config = settings.MAILERS[using]
-    backend = import_string(config.get('BACKEND', 'django.core.mail.backends.smtp.EmailBackend'))
-    return backend(alias=using, _ignore_unknown_kwargs=set(options), **{**config.get('OPTIONS', {}), **options})
 
 
 # backwards compatibility
