@@ -1,11 +1,39 @@
 import copy
 import base64
+import email
+from email.message import Message, MIMEPart
 from email.mime.base import MIMEBase
+from email.policy import compat32, default
 
+import django
 from django.conf import settings
 
 # Make sure our AppConf is loaded properly.
 import djcelery_email.conf  # noqa
+
+
+# Django 6.0 added MIMEPart attachments and deprecated MIMEBase ones.
+MIMEPART_ATTACHMENTS = django.VERSION >= (6, 0)
+
+
+class _ParsedMIMEBase(MIMEBase):
+    """A MIMEBase that the email parser can create, for Django versions before 6.0."""
+
+    def __init__(self, policy=compat32):
+        Message.__init__(self, policy=policy)
+
+
+def mime_attachment_to_dict(attachment):
+    # Keep the whole MIME part, so that headers such as Content-ID are kept.
+    raw = attachment.as_bytes(policy=attachment.policy.clone(mangle_from_=False))
+    return {'mime': base64.b64encode(raw).decode('ascii')}
+
+
+def dict_to_mime_attachment(attachment):
+    raw = base64.b64decode(attachment['mime'].encode('ascii'))
+    if MIMEPART_ATTACHMENTS:
+        return email.message_from_bytes(raw, _class=MIMEPart, policy=default)
+    return email.message_from_bytes(raw, _class=_ParsedMIMEBase)
 
 
 def chunked(iterator, chunksize):
@@ -59,15 +87,14 @@ def email_to_dict(message):
 
     attachments = message.attachments
     for attachment in attachments:
-        if isinstance(attachment, MIMEBase):
-            filename = attachment.get_filename('')
-            binary_contents = attachment.get_payload(decode=True)
-            mimetype = attachment.get_content_type()
-        else:
-            filename, binary_contents, mimetype = attachment
-            # For a mimetype starting with text/, content is expected to be a string.
-            if isinstance(binary_contents, str):
-                binary_contents = binary_contents.encode()
+        # MIMEBase attachments, and MIMEPart ones on Django 6.0+
+        if isinstance(attachment, Message):
+            message_dict['attachments'].append(mime_attachment_to_dict(attachment))
+            continue
+        filename, binary_contents, mimetype = attachment
+        # For a mimetype starting with text/, content is expected to be a string.
+        if isinstance(binary_contents, str):
+            binary_contents = binary_contents.encode()
         contents = base64.b64encode(binary_contents).decode('ascii')
         message_dict['attachments'].append((filename, contents, mimetype))
 
@@ -96,6 +123,9 @@ def dict_to_email(messagedict):
     attachments = message_kwargs.pop('attachments')
     message_kwargs['attachments'] = []
     for attachment in attachments:
+        if isinstance(attachment, dict):
+            message_kwargs['attachments'].append(dict_to_mime_attachment(attachment))
+            continue
         filename, contents, mimetype = attachment
         contents = base64.b64decode(contents.encode('ascii'))
 
