@@ -17,7 +17,10 @@ class CeleryEmailBackend(BaseEmailBackend):
         else:
             # Configured with MAILERS: BaseEmailBackend reports unknown OPTIONS.
             super().__init__(alias=alias, **kwargs)
-            self.init_kwargs = {}
+            # RemovedInDjango2028Warning: deprecated per-call options, such as the auth_user
+            # of send_mail(), are passed on to the mailer in using.
+            ignored = kwargs.get('_ignore_unknown_kwargs') or ()
+            self.init_kwargs = {name: kwargs[name] for name in ignored if name in kwargs}
             _check_using(alias, using)
 
         # Django 6.1 deprecates fail_silently in BaseEmailBackend, so keep it here.
