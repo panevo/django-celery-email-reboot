@@ -37,6 +37,9 @@ def send_emails(messages, backend_kwargs=None, *, using=None, **kwargs):
     # make sure they're all dicts
     messages = [email_to_dict(m) for m in messages]
 
+    if using is None and _mailers_configured():
+        # Queued with EMAIL_BACKEND before the project switched to MAILERS.
+        using = _mailer_for_tasks_without_using()
     if using is None:
         # Configured with EMAIL_BACKEND. Create the backend like get_connection() does,
         # which Django 6.1 deprecates.
@@ -70,6 +73,19 @@ def send_emails(messages, backend_kwargs=None, *, using=None, **kwargs):
 
     conn.close()
     return messages_sent
+
+
+def _mailers_configured():
+    return hasattr(mail, 'mailers') and hasattr(settings, 'MAILERS')
+
+
+def _mailer_for_tasks_without_using():
+    # Send through the mailer that the default CeleryEmailBackend mailer wraps, or else
+    # through the default mailer.
+    from djcelery_email.backends import CeleryEmailBackend
+
+    default = mail.mailers.default
+    return default.using if isinstance(default, CeleryEmailBackend) else 'default'
 
 
 # backwards compatibility
