@@ -1,5 +1,7 @@
 from django.conf import settings
-from django.core.mail import EmailMessage, get_connection
+from django.core import mail
+from django.core.mail import EmailMessage
+from django.utils.module_loading import import_string
 
 from celery import shared_task
 
@@ -35,12 +37,20 @@ def send_emails(messages, backend_kwargs=None, *, using=None, **kwargs):
     # make sure they're all dicts
     messages = [email_to_dict(m) for m in messages]
 
+    if using is None and _mailers_configured():
+        # Queued with EMAIL_BACKEND before the project switched to MAILERS.
+        using = _mailer_for_tasks_without_using()
     if using is None:
-        conn = get_connection(backend=settings.CELERY_EMAIL_BACKEND, **combined_kwargs)
+        # Configured with EMAIL_BACKEND. Create the backend like get_connection() does,
+        # which Django 6.1 deprecates.
+        conn = import_string(settings.CELERY_EMAIL_BACKEND)(**combined_kwargs)
     else:
-        # Configured with MAILERS (Django 6.1+): send through the wrapped mailer.
-        from django.core.mail import mailers
-        conn = mailers[using]
+        # Configured with MAILERS (Django 6.1+): send through the wrapped mailer, which has
+        # its options in MAILERS.
+        if combined_kwargs:
+            logger.warning("Sending through mailer %r without the options it was queued with: %s",
+                           using, ", ".join(sorted(combined_kwargs)))
+        conn = mail.mailers[using]
     try:
         conn.open()
     except Exception:
@@ -67,6 +77,19 @@ def send_emails(messages, backend_kwargs=None, *, using=None, **kwargs):
 
     conn.close()
     return messages_sent
+
+
+def _mailers_configured():
+    return hasattr(mail, 'mailers') and hasattr(settings, 'MAILERS')
+
+
+def _mailer_for_tasks_without_using():
+    # Send through the mailer that the default CeleryEmailBackend mailer wraps, or else
+    # through the default mailer.
+    from djcelery_email.backends import CeleryEmailBackend
+
+    default = mail.mailers.default
+    return default.using if isinstance(default, CeleryEmailBackend) else 'default'
 
 
 # backwards compatibility

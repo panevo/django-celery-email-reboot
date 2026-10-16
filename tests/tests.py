@@ -353,6 +353,19 @@ class EvenErrorBackend(locmem.EmailBackend):
             return super().send_messages(messages)
 
 
+class TaskWarningTests(TestCase):
+    def test_task_does_not_use_deprecated_get_connection(self):
+        msg = mail.EmailMessage('test', 'body', 'from@example.com', ['to@example.com'])
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter('always')
+            tasks.send_emails([utils.email_to_dict(msg)], {})
+
+        self.assertEqual(len(mail.outbox), 1)
+        # Django 6.1 deprecates get_connection()
+        self.assertEqual([str(w.message) for w in caught if 'get_connection' in str(w.message)], [])
+
+
 class TaskErrorTests(TestCase):
     """
     Tests that the 'tasks.send_emails' task does not crash if a single message
@@ -568,6 +581,11 @@ class ConflictingPackageCheckTests(TestCase):
         self.assertEqual(self.conflict_warnings(), [])
 
 
+class MailersCheckTests(TestCase):
+    def test_no_errors_without_mailers(self):
+        self.assertEqual([m for m in checks.run_checks() if m.id == 'djcelery_email.E001'], [])
+
+
 class FailSilentlyTests(TestCase):
     def test_fail_silently_without_deprecation_warning(self):
         # Django 6.1 deprecates passing fail_silently to BaseEmailBackend, so the
@@ -622,6 +640,57 @@ class MailersTests(TestCase):
 
         retry.assert_called_once()
         self.assertEqual(retry.call_args.kwargs['kwargs'], {'using': 'wrapped'})
+
+    def mailer_errors(self):
+        return [m for m in checks.run_checks() if m.id == 'djcelery_email.E001']
+
+    def test_task_queued_before_mailers_sends_through_wrapped_mailer(self):
+        msg = mail.EmailMessage('test', 'body', 'from@example.com', ['to@example.com'])
+
+        # Queued with EMAIL_BACKEND, before the project switched to MAILERS
+        tasks.send_emails([utils.email_to_dict(msg)], {})
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].sent_using, 'wrapped')
+
+    def test_task_queued_before_mailers_sends_through_default_mailer(self):
+        msg = mail.EmailMessage('test', 'body', 'from@example.com', ['to@example.com'])
+
+        with override_settings(MAILERS={'default': {'BACKEND': 'django.core.mail.backends.locmem.EmailBackend'}}):
+            tasks.send_emails([utils.email_to_dict(msg)], {})
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].sent_using, 'default')
+
+    def test_task_queued_before_mailers_ignores_backend_options(self):
+        msg = mail.EmailMessage('test', 'body', 'from@example.com', ['to@example.com'])
+
+        with self.assertLogs('djcelery_email.tasks', 'WARNING') as logs:
+            tasks.send_emails([utils.email_to_dict(msg)], {'username': 'user', 'password': 'secret'})
+
+        self.assertEqual(mail.outbox[0].sent_using, 'wrapped')
+        [log] = logs.output
+        self.assertIn("'wrapped'", log)
+        self.assertIn('password, username', log)
+        self.assertNotIn('secret', log)
+
+    def test_check_accepts_valid_mailers(self):
+        self.assertEqual(self.mailer_errors(), [])
+
+    def test_check_reports_invalid_mailers(self):
+        cases = [
+            ({}, "'using'"),
+            ({'using': 'default'}, "'using'"),
+            ({'using': 'missing'}, "'missing'"),
+            ({'using': 'wrapped', 'host': 'smtp.example.com'}, "'host'"),
+        ]
+        for options, message in cases:
+            mailers = {**MAILERS, 'default': {**MAILERS['default'], 'OPTIONS': options}}
+            with self.subTest(options=options), override_settings(MAILERS=mailers):
+                [error] = self.mailer_errors()
+                self.assertEqual(error.level, checks.ERROR)
+                self.assertIn("MAILERS['default']", error.msg)
+                self.assertIn(message, error.msg)
 
     def test_using_is_required(self):
         self.assertInvalidMailer({}, "'using'")

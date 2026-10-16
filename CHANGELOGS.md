@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [4.3.1] - Unreleased
 
+### Added
+
+- Add a system check (`djcelery_email.E001`) for invalid `CeleryEmailBackend` options in `MAILERS`
+
 ### Fixed
 
-- Fix `ValueError` when sending email with an `email.message.MIMEPart` attachment, the kind of attachment Django 6.0 recommends
-- Keep the headers of MIME attachments, such as the `Content-ID` of an inline image. Previously MIME attachments were sent as plain attachments without their headers, so `cid:` images in HTML email did not show. Update the Celery workers before the web servers, since workers running an older version can't handle MIME attachments queued by this version
+- Fix email being lost when switching to `MAILERS`
+- Fix the `get_connection()` deprecation warning for every email on Django 6.1
+- Fix `ValueError` for `MIMEPart` attachments
+- Keep the headers of MIME attachments, such as the `Content-ID` of inline images. Update the Celery workers before the web servers
 
 ## [4.3.0] - 2026-10-14
 
