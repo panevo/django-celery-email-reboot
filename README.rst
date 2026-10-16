@@ -82,6 +82,13 @@ When ``MAILERS`` is used, the ``CELERY_EMAIL_BACKEND`` setting is ignored. The e
 Celery worker through the mailer set in ``using``, so the workers need the same ``MAILERS`` setting.
 The other ``CELERY_EMAIL_*`` settings described below still apply.
 
+A ``CeleryEmailBackend`` mailer with invalid ``OPTIONS``, such as a missing ``using``, is reported by
+Django's system checks (``djcelery_email.E001``).
+
+Email that was queued before a project switched from ``EMAIL_BACKEND`` to ``MAILERS`` is sent through
+the mailer that the default ``CeleryEmailBackend`` mailer wraps, or through the default mailer if it is
+not a ``CeleryEmailBackend``.
+
 Mass email are sent in chunks of size ``CELERY_EMAIL_CHUNK_SIZE`` (defaults to 10).
 
 If you need to set any of the settings (attributes) you'd normally be able to set on a
