@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.1] - Unreleased
+
+### Fixed
+
+- Fix `ValueError` when sending email with an `email.message.MIMEPart` attachment, the kind of attachment Django 6.0 recommends
+- Keep the headers of MIME attachments, such as the `Content-ID` of an inline image. Previously MIME attachments were sent as plain attachments without their headers, so `cid:` images in HTML email did not show. Update the Celery workers before the web servers, since workers running an older version can't handle MIME attachments queued by this version
+
 ## [4.3.0] - 2026-10-14
 
 ### Added
