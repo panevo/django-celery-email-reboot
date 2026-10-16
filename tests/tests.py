@@ -5,7 +5,10 @@ import sys
 import tempfile
 import unittest
 import warnings
+from email.message import MIMEPart
+from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
+from email.mime.text import MIMEText
 from unittest import mock
 
 from django.core import checks, mail
@@ -16,6 +19,7 @@ from django.test import TestCase
 from django.test.utils import override_settings
 
 import celery
+import django
 from djcelery_email import tasks, utils
 from djcelery_email.backends import CeleryEmailBackend
 
@@ -122,6 +126,120 @@ class UtilTests(TestCase):
         )
         result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+
+# Django 6.0 added MIMEPart attachments and deprecated MIMEBase ones
+HAS_MIMEPART_ATTACHMENTS = django.VERSION >= (6, 0)
+
+
+def read_image():
+    with open(os.path.join(os.path.dirname(__file__), 'image.png'), 'rb') as file:
+        return file.read()
+
+
+def inline_image(content):
+    image = MIMEImage(content)
+    image.add_header('Content-ID', '<logo@example.com>')
+    image.add_header('Content-Disposition', 'inline', filename='logo.png')
+    return image
+
+
+def find_part(message, content_id):
+    for part in message.walk():
+        if part['Content-ID'] == content_id:
+            return part
+    raise AssertionError('No part with Content-ID %s' % content_id)
+
+
+class MimeAttachmentTests(TestCase):
+    """MIME attachments must arrive as they were attached, with all their headers."""
+
+    def setUp(self):
+        super().setUp()
+        conf = celery.current_app.conf
+        self.addCleanup(setattr, conf, 'task_always_eager', conf.task_always_eager)
+        conf.task_always_eager = True
+
+    def round_trip(self, msg):
+        return utils.dict_to_email(json.loads(json.dumps(utils.email_to_dict(msg))))
+
+    def test_inline_image_keeps_its_content_id(self):
+        content = read_image()
+        msg = EmailMultiAlternatives('test', 'body', 'from@example.com', ['to@example.com'])
+        msg.attach_alternative('<img src="cid:logo@example.com">', 'text/html')
+        with warnings.catch_warnings():
+            # Django 6.0+ warns about MIMEBase attachments
+            warnings.simplefilter('ignore')
+            msg.attach(inline_image(content))
+
+        [result] = msg.send()
+
+        self.assertEqual(result.get(), 1)
+        part = find_part(mail.outbox[0].message(), '<logo@example.com>')
+        self.assertEqual(part.get_content_type(), 'image/png')
+        self.assertEqual(part.get_content_disposition(), 'inline')
+        self.assertEqual(part.get_filename(), 'logo.png')
+        self.assertEqual(part.get_payload(decode=True), content)
+
+    def test_mime_text_attachment_keeps_its_lines(self):
+        text = 'From the report:\nline two\n'
+        attachment = MIMEText(text, 'plain', 'utf-8')
+        attachment.add_header('Content-Disposition', 'attachment', filename='report.txt')
+        msg = mail.EmailMessage('test', 'body', 'from@example.com', ['to@example.com'])
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            msg.attach(attachment)
+
+        [attachment] = self.round_trip(msg).attachments
+
+        self.assertEqual(attachment.get_payload(decode=True).decode('utf-8'), text)
+        self.assertEqual(attachment.get_filename(), 'report.txt')
+
+    def test_mime_and_tuple_attachments_keep_their_order(self):
+        msg = mail.EmailMessage('test', 'body', 'from@example.com', ['to@example.com'])
+        msg.attach('first.txt', 'first', 'text/plain')
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            msg.attach(inline_image(read_image()))
+        msg.attach('last.bin', b'last', 'application/octet-stream')
+
+        first, image, last = self.round_trip(msg).attachments
+
+        self.assertEqual(tuple(first), ('first.txt', 'first', 'text/plain'))
+        self.assertEqual(image['Content-ID'], '<logo@example.com>')
+        self.assertEqual(tuple(last), ('last.bin', b'last', 'application/octet-stream'))
+
+    @unittest.skipUnless(HAS_MIMEPART_ATTACHMENTS, 'MIMEPart attachments require Django 6.0+')
+    def test_mimepart_attachment(self):
+        content = read_image()
+        part = MIMEPart()
+        part.set_content(content, maintype='image', subtype='png', disposition='inline',
+                         filename='logo.png', cid='<logo@example.com>')
+        msg = EmailMultiAlternatives('test', 'body', 'from@example.com', ['to@example.com'])
+        msg.attach_alternative('<img src="cid:logo@example.com">', 'text/html')
+        msg.attach(part)
+
+        [result] = msg.send()
+
+        self.assertEqual(result.get(), 1)
+        part = find_part(mail.outbox[0].message(), '<logo@example.com>')
+        self.assertEqual(part.get_content_disposition(), 'inline')
+        self.assertEqual(part.get_filename(), 'logo.png')
+        self.assertEqual(part.get_payload(decode=True), content)
+
+    def test_mime_attachments_are_rebuilt_without_deprecation_warnings(self):
+        msg = mail.EmailMessage('test', 'body', 'from@example.com', ['to@example.com'])
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            msg.attach(inline_image(read_image()))
+        msg_dict = json.loads(json.dumps(utils.email_to_dict(msg)))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            [attachment] = utils.dict_to_email(msg_dict).attachments
+
+        # Django 6.0+ expects MIMEPart attachments, older versions MIMEBase ones
+        self.assertIsInstance(attachment, MIMEPart if HAS_MIMEPART_ATTACHMENTS else MIMEBase)
 
 
 class TaskTests(TestCase):
