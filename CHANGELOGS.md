@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix email being lost when switching to `MAILERS`
-- Pass `auth_user` and `auth_password` on to the mailer in `using`
 - Fix the `get_connection()` deprecation warning for every email on Django 6.1
 - Fix `ValueError` for `MIMEPart` attachments
 - Keep the headers of MIME attachments, such as the `Content-ID` of inline images. Update the Celery workers before the web servers
